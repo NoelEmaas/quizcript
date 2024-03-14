@@ -2,7 +2,7 @@
 
 function read_database() {
     # read the existing JSON file
-    json_data=$(cat quiz_data.json)
+    json_data=$(cat database.json)
 }
 
 function get_question() {
@@ -53,7 +53,7 @@ function add_quiz() {
     updated_data=$(echo "$json_data" | jq ".quizzes += [$new_quiz]")
 
     # update the JSON file
-    echo "$updated_data" > quiz_data.json
+    echo "$updated_data" > database.json
 }
 
 function add_question() {
@@ -69,7 +69,7 @@ function add_question() {
     # append the new question to the specified quiz
     updated_data=$(echo "$json_data" | jq ".quizzes[$quiz_id].questions += [$new_question]")
 
-    echo "$updated_data" > quiz_data.json
+    echo "$updated_data" > database.json
 }
 
 function edit_quiz_title() {
@@ -82,7 +82,7 @@ function edit_quiz_title() {
     updated_data=$(echo "$json_data" | jq --argjson qid "$quiz_id" --arg title "$new_title" '.quizzes[$qid].title = $title')
 
     # update the JSON file
-    echo "$updated_data" > quiz_data.json
+    echo "$updated_data" > database.json
 }
 
 function edit_question() {
@@ -96,7 +96,7 @@ function edit_question() {
     updated_data=$(echo "$json_data" | jq --argjson qid "$quiz_id" --argjson quid "$question_id" --arg q "$new_question" '.quizzes[$qid].questions[$quid].question = $q')
 
     # update the JSON file
-    echo "$updated_data" > quiz_data.json
+    echo "$updated_data" > database.json
 }
 
 function edit_answer() {
@@ -110,7 +110,7 @@ function edit_answer() {
     updated_data=$(echo "$json_data" | jq --argjson qid "$quiz_id" --argjson quid "$question_id" --arg a "$new_answer" '.quizzes[$qid].questions[$quid].answer = $a')
 
     # update the JSON file
-    echo "$updated_data" > quiz_data.json
+    echo "$updated_data" > database.json
 }
 
 function delete_quiz() {
@@ -122,7 +122,7 @@ function delete_quiz() {
     updated_data=$(echo "$json_data" | jq "del(.quizzes[$quiz_id])")
 
     # update the JSON file
-    echo "$updated_data" > quiz_data.json
+    echo "$updated_data" > database.json
 }
 
 
@@ -136,7 +136,6 @@ function delete_question() {
     updated_data=$(echo "$json_data" | jq --argjson qid "$quiz_id" --argjson quid "$question_id" 'del(.quizzes[$qid].questions[$quid])')
 
     # update the JSON file
-    echo "$updated_data" > quiz_data.json
+    echo "$updated_data" > database.json
 }
 
-get_quiz_titles
