@@ -1,0 +1,38 @@
+#!/bin/bash
+
+function add_quiz() {
+   local quiz_title="$1"
+
+    # read the existing JSON file
+    json_data=$(cat quiz_data.json)
+
+    # create a new quiz object
+    new_quiz=$(jq -n --arg title "$quiz_title" '{title: $title, questions: []}')
+
+    # append the new quiz to the "quizzes" array
+    updated_data=$(echo "$json_data" | jq ".quizzes += [$new_quiz]")
+
+    # update the JSON file
+    echo "$updated_data" > quiz_data.json
+}
+
+function add_question() {
+    local quiz_id="$1"
+    local question="$2"
+    local answer="$3"
+
+    # read the existing JSON file
+    json_data=$(cat quiz_data.json)
+
+    # create a new question object
+    new_question=$(jq -n --arg q "$question" --arg a "$answer" '{question: $q, answer: $a}')
+
+    # append the new question to the specified quiz
+    updated_data=$(echo "$json_data" | jq ".quizzes[$quiz_id].questions += [$new_question]")
+
+    # update the JSON file
+    echo "$updated_data" > quiz_data.json
+}
+
+add_question 0 "What is the capital of France?" "Paris"
+

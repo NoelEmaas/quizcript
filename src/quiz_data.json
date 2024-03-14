@@ -1,0 +1,29 @@
+{
+  "quizzes": [
+    {
+      "title": "",
+      "questions": [
+        {
+          "question": "What is the capital of France?",
+          "answer": "Paris"
+        },
+        {
+          "question": "What is the capital of France?",
+          "answer": "Paris"
+        },
+        {
+          "question": "What is the capital of France?",
+          "answer": "Paris"
+        }
+      ]
+    },
+    {
+      "title": "",
+      "questions": []
+    },
+    {
+      "title": "Hello",
+      "questions": []
+    }
+  ]
+}
