@@ -1,15 +1,15 @@
 {
   "quizzes": [
     {
-      "title": "",
+      "title": "Updated Quiz Title",
       "questions": [
         {
           "question": "What is the capital of France?",
           "answer": "Paris"
         },
         {
-          "question": "What is the capital of France?",
-          "answer": "Paris"
+          "question": "What is the capital of Spain?",
+          "answer": "Madrid"
         },
         {
           "question": "What is the capital of France?",
@@ -18,7 +18,7 @@
       ]
     },
     {
-      "title": "",
+      "title": "New Quiz Title",
       "questions": []
     },
     {

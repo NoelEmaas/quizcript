@@ -72,5 +72,52 @@ function add_question() {
     echo "$updated_data" > quiz_data.json
 }
 
-get_answer 0 1
+function edit_quiz_title() {
+    local quiz_id="$1"
+    local new_title="$2"
+
+    # read the existing JSON file
+    json_data=$(cat quiz_data.json)
+
+    # update the quiz title
+    updated_data=$(echo "$json_data" | jq --argjson qid "$quiz_id" --arg title "$new_title" '.quizzes[$qid].title = $title')
+
+    # update the JSON file
+    echo "$updated_data" > quiz_data.json
+}
+
+function edit_question() {
+    local quiz_id="$1"
+    local question_id="$2"
+    local new_question="$3"
+
+    # read the existing JSON file
+    json_data=$(cat quiz_data.json)
+
+    # update the question
+    updated_data=$(echo "$json_data" | jq --argjson qid "$quiz_id" --argjson quid "$question_id" --arg q "$new_question" '.quizzes[$qid].questions[$quid].question = $q')
+
+    # update the JSON file
+    echo "$updated_data" > quiz_data.json
+}
+
+function edit_answer() {
+    local quiz_id="$1"
+    local question_id="$2"
+    local new_answer="$3"
+
+    # read the existing JSON file
+    json_data=$(cat quiz_data.json)
+
+    # update the answer
+    updated_data=$(echo "$json_data" | jq --argjson qid "$quiz_id" --argjson quid "$question_id" --arg a "$new_answer" '.quizzes[$qid].questions[$quid].answer = $a')
+
+    # update the JSON file
+    echo "$updated_data" > quiz_data.json
+}
+
+edit_answer 0 1 "Madrid"
+
+
+
 
