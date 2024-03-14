@@ -1,11 +1,15 @@
 #!/bin/bash
 
+function read_database() {
+    # read the existing JSON file
+    json_data=$(cat quiz_data.json)
+}
+
 function get_question() {
     local quiz_id="$1"
     local question_id="$2"
 
-    # read the existing JSON file
-    json_data=$(cat quiz_data.json)
+    read_database
 
     # extract the question
     question=$(echo "$json_data" | jq --argjson qid "$quiz_id" --argjson quid "$question_id" '.quizzes[$qid].questions[$quid].question')
@@ -18,8 +22,7 @@ function get_answer() {
     local quiz_id="$1"
     local question_id="$2"
 
-    # read the existing JSON file
-    json_data=$(cat quiz_data.json)
+    read_database
 
     # extract the answer
     answer=$(echo "$json_data" | jq --argjson qid "$quiz_id" --argjson quid "$question_id" '.quizzes[$qid].questions[$quid].answer')
@@ -29,8 +32,7 @@ function get_answer() {
 }
 
 function get_quiz_titles() {
-    # read the existing JSON file
-    json_data=$(cat quiz_data.json)
+    read_database
 
     # extract the quiz titles
     quiz_titles=$(echo "$json_data" | jq '.quizzes[].title')
@@ -42,8 +44,7 @@ function get_quiz_titles() {
 function add_quiz() {
     local quiz_title="$1"
 
-    # read the existing JSON file
-    json_data=$(cat quiz_data.json)
+    read_database
 
     # create a new quiz object
     new_quiz=$(jq -n --arg title "$quiz_title" '{title: $title, questions: []}')
@@ -60,8 +61,7 @@ function add_question() {
     local question="$2"
     local answer="$3"
 
-    # read the existing JSON file
-    json_data=$(cat quiz_data.json)
+    read_database
 
     # create a new question object
     new_question=$(jq -n --arg q "$question" --arg a "$answer" '{question: $q, answer: $a}')
@@ -75,9 +75,8 @@ function add_question() {
 function edit_quiz_title() {
     local quiz_id="$1"
     local new_title="$2"
-
-    # read the existing JSON file
-    json_data=$(cat quiz_data.json)
+    
+    read_database
 
     # update the quiz title
     updated_data=$(echo "$json_data" | jq --argjson qid "$quiz_id" --arg title "$new_title" '.quizzes[$qid].title = $title')
@@ -90,9 +89,8 @@ function edit_question() {
     local quiz_id="$1"
     local question_id="$2"
     local new_question="$3"
-
-    # read the existing JSON file
-    json_data=$(cat quiz_data.json)
+    
+    read_database
 
     # update the question
     updated_data=$(echo "$json_data" | jq --argjson qid "$quiz_id" --argjson quid "$question_id" --arg q "$new_question" '.quizzes[$qid].questions[$quid].question = $q')
@@ -106,8 +104,7 @@ function edit_answer() {
     local question_id="$2"
     local new_answer="$3"
 
-    # read the existing JSON file
-    json_data=$(cat quiz_data.json)
+    read_database
 
     # update the answer
     updated_data=$(echo "$json_data" | jq --argjson qid "$quiz_id" --argjson quid "$question_id" --arg a "$new_answer" '.quizzes[$qid].questions[$quid].answer = $a')
@@ -119,8 +116,7 @@ function edit_answer() {
 function delete_quiz() {
     local quiz_id="$1"
 
-    # read the existing JSON file
-    json_data=$(cat quiz_data.json)
+    read_database
 
     # remove the specified quiz from the "quizzes" array
     updated_data=$(echo "$json_data" | jq "del(.quizzes[$quiz_id])")
@@ -133,9 +129,8 @@ function delete_quiz() {
 function delete_question() {
     local quiz_id="$1"
     local question_id="$2"
-
-    # read the existing JSON file
-    json_data=$(cat quiz_data.json)
+    
+    read_database
 
     # remove the specified question from the "questions" array
     updated_data=$(echo "$json_data" | jq --argjson qid "$quiz_id" --argjson quid "$question_id" 'del(.quizzes[$qid].questions[$quid])')
@@ -144,3 +139,4 @@ function delete_question() {
     echo "$updated_data" > quiz_data.json
 }
 
+get_quiz_titles
