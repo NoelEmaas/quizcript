@@ -1,7 +1,46 @@
 #!/bin/bash
 
+function get_question() {
+    local quiz_id="$1"
+    local question_id="$2"
+
+    # read the existing JSON file
+    json_data=$(cat quiz_data.json)
+
+    # extract the question
+    question=$(echo "$json_data" | jq --argjson qid "$quiz_id" --argjson quid "$question_id" '.quizzes[$qid].questions[$quid].question')
+
+    # return the question
+    echo "$question"
+}
+
+function get_answer() {
+    local quiz_id="$1"
+    local question_id="$2"
+
+    # read the existing JSON file
+    json_data=$(cat quiz_data.json)
+
+    # extract the answer
+    answer=$(echo "$json_data" | jq --argjson qid "$quiz_id" --argjson quid "$question_id" '.quizzes[$qid].questions[$quid].answer')
+
+    # return the answer
+    echo "$answer"
+}
+
+function get_quiz_titles() {
+    # read the existing JSON file
+    json_data=$(cat quiz_data.json)
+
+    # extract the quiz titles
+    quiz_titles=$(echo "$json_data" | jq '.quizzes[].title')
+
+    # return the quiz titles
+    echo "$quiz_titles"
+}
+
 function add_quiz() {
-   local quiz_title="$1"
+    local quiz_title="$1"
 
     # read the existing JSON file
     json_data=$(cat quiz_data.json)
@@ -30,9 +69,8 @@ function add_question() {
     # append the new question to the specified quiz
     updated_data=$(echo "$json_data" | jq ".quizzes[$quiz_id].questions += [$new_question]")
 
-    # update the JSON file
     echo "$updated_data" > quiz_data.json
 }
 
-add_question 0 "What is the capital of France?" "Paris"
+get_answer 0 1
 
