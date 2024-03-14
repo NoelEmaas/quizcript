@@ -8,21 +8,13 @@
           "answer": "Paris"
         },
         {
-          "question": "What is the capital of Spain?",
-          "answer": "Madrid"
-        },
-        {
           "question": "What is the capital of France?",
           "answer": "Paris"
         }
       ]
     },
     {
-      "title": "New Quiz Title",
-      "questions": []
-    },
-    {
-      "title": "Hello",
+      "title": "New Quiz 2",
       "questions": []
     }
   ]

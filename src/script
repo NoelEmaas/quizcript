@@ -116,8 +116,31 @@ function edit_answer() {
     echo "$updated_data" > quiz_data.json
 }
 
-edit_answer 0 1 "Madrid"
+function delete_quiz() {
+    local quiz_id="$1"
+
+    # read the existing JSON file
+    json_data=$(cat quiz_data.json)
+
+    # remove the specified quiz from the "quizzes" array
+    updated_data=$(echo "$json_data" | jq "del(.quizzes[$quiz_id])")
+
+    # update the JSON file
+    echo "$updated_data" > quiz_data.json
+}
 
 
+function delete_question() {
+    local quiz_id="$1"
+    local question_id="$2"
 
+    # read the existing JSON file
+    json_data=$(cat quiz_data.json)
+
+    # remove the specified question from the "questions" array
+    updated_data=$(echo "$json_data" | jq --argjson qid "$quiz_id" --argjson quid "$question_id" 'del(.quizzes[$qid].questions[$quid])')
+
+    # update the JSON file
+    echo "$updated_data" > quiz_data.json
+}
 
