@@ -21,6 +21,7 @@ function main() {
     case $1 in
         "") default_menu ;;
         "--default") default_menu ;;
+        "--help") help ;;
         *) help ;;
     esac
 }
