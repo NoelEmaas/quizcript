@@ -1,10 +1,28 @@
 #!/bin/bash
 
-source cli/default/main
-source crud/script
+source cli/default
 
-function main() {
-    default_main
+function init_db() {
+    [ ! -e "database.json" ] && echo '{"quizzes:" []}' > database.json
 }
 
-main
+function help() {
+    echo "Usage: $0 [OPTION]"
+    echo
+    echo "Options:"
+    echo "  --default  Run quizcript with default command line interface"
+    echo "  --dialog   Run quizcript with dialog interface"
+    echo "  --help     Display this help message"
+}
+
+function main() {
+    init_db
+
+    case $1 in
+        "") default_menu ;;
+        "--default") default_menu ;;
+        *) help ;;
+    esac
+}
+
+main $@

@@ -1,0 +1,185 @@
+#!/bin/bash
+
+source crud/script
+
+function default_menu() {
+    display_banner
+
+    echo
+    center_text "$(title "Main Menu:")"     
+    echo
+    
+    center_text "1. Take a quiz  "
+    center_text "2. Create a quiz"
+    center_text "3. Edit a quiz  "
+    center_text "4. Delete a quiz"
+    echo
+
+    read -p "$(center_text "Enter your choice: ")" choice
+
+    case $choice in
+        1) take_quiz ;;
+        2) create_quiz ;;
+        3) edit_quiz ;;
+        4) delete_quiz ;;
+        *) echo "Invalid choice" ;;
+    esac
+}
+
+function center_text() {
+    term_width=$(tput cols)
+    text_length=${#1}
+    padding=$(( ($term_width - $text_length) / 2))
+    printf "%*s%s\n" $padding "" "$1"
+}
+
+function title() {
+    local text="$1"
+    local line_length=60
+    local padding=$(( ($line_length - ${#text}) / 2 ))
+    echo "$(printf "%-${padding}s" "-" | tr ' ' '-') $text $(printf "%-${padding}s" "-" | tr ' ' '-')"
+}
+
+function display_banner() {
+    clear
+    center_text "Welcome to quiz manager -"
+    echo
+    center_text " ██████╗ ██╗   ██╗██╗███████╗ ██████╗██████╗ ██╗██████╗ ████████╗"
+    center_text "██╔═══██╗██║   ██║██║╚══███╔╝██╔════╝██╔══██╗██║██╔══██╗╚══██╔══╝"
+    center_text "██║   ██║██║   ██║██║  ███╔╝ ██║     ██████╔╝██║██████╔╝   ██║   "
+    center_text "██║▄▄ ██║██║   ██║██║ ███╔╝  ██║     ██╔══██╗██║██╔═══╝    ██║   "
+    center_text "╚██████╔╝╚██████╔╝██║███████╗╚██████╗██║  ██║██║██║        ██║   "
+    center_text " ╚══▀▀═╝  ╚═════╝ ╚═╝╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝╚═╝        ╚═╝   "
+    echo
+}
+
+# Functions for taking a quiz
+
+function take_quiz() {
+    display_all_quizzes
+    read -p "$(center_text "Select a quiz or enter 'b' to go back: ")" quiz_id
+
+    if [ "$quiz_id" = "b" ]; then
+        default_menu
+    fi
+
+    ((quiz_id--))
+    score=0
+    local quiz_title=$(get_quiz_title "$quiz_id")
+    local question_count=$(get_question_count "$quiz_id")
+
+    for ((i=0; i<question_count; i++)); do
+        display_quiz_title "$quiz_title"
+        display_quiz_stat "$score" "$((i + 1))" "$question_count"
+        display_question "$quiz_title" "$quiz_id" "$i"
+
+        echo
+        read -p "$(center_text "Your answer: ")" user_answer
+        echo
+
+        result=$(check_answer "$quiz_id" "$i" "$user_answer")
+        ((score += result))
+
+        display_quiz_title "$quiz_title"
+        display_quiz_stat "$score" "$((i + 1))" "$question_count"
+        display_question "$quiz_title" "$quiz_id" "$i"
+
+        echo
+        if [ "$result" -eq 1 ]; then
+            center_text "Correct!"
+        else
+            center_text "The correct answer is: $(get_answer "$quiz_id" "$i")"
+        fi
+
+        echo
+        read -p "$(center_text "Press enter to continue")"
+        clear
+    done
+
+    display_final_score "$quiz_title" "$score" "$question_count"
+
+    read -p "$(center_text "Press enter to continue")"
+    take_quiz
+}
+
+function display_all_quizzes() {
+    local max_length=0
+    local titles=()
+    local counter=1
+
+    # get quiz titles and find maximum length
+    while read -r title; do
+        title_length=${#title}
+        if [ "$title_length" -gt "$max_length" ]; then
+            max_length=$title_length
+        fi
+        titles+=("$title")
+    done < <(get_quiz_titles)
+
+    display_banner
+    center_text "$(title "All Quizzes:")"
+    echo
+
+    # print quiz titles with padding
+    for title in "${titles[@]}"; do
+        padding_length=$((max_length - ${#title}))
+        padded_title="${title}$(printf "%*s" $padding_length)"
+        center_text "$counter. $padded_title"
+        ((counter++))
+    done
+    echo
+}
+
+function display_final_score() {
+    local quiz_title="$1"
+    local score="$2"
+    local question_count="$3"
+
+    display_banner
+    center_text "$(title "$quiz_title")"
+    echo
+
+    center_text "Your final score is: $score / $question_count"
+    echo
+}
+
+function display_quiz_stat() {
+    local score="$1"
+    local current_question_count="$2"
+    local total_question_count="$3"
+
+    center_text "Score: $score                                   Question: $current_question_count / $total_question_count"
+    echo
+}
+
+function display_quiz_title() {
+    display_banner
+    center_text "$(title "$1")"
+    echo
+}
+
+function display_question() {
+    local quiz_title="$1"
+    local quiz_id="$2"
+    local question_id="$3"
+
+    local question=$(get_question "$quiz_id" "$question_id")
+    local answer=$(get_answer "$quiz_id" "$question_id")
+
+    center_text "Question $((question_id + 1)): $question"
+}
+
+function check_answer() {
+    local quiz_id="$1"
+    local question_id="$2"
+    local user_answer="$3"
+    local correct_answer=$(get_answer "$quiz_id" "$question_id")
+
+    if [ "$user_answer" = "$correct_answer" ]; then
+        echo 1
+    else
+        echo 0
+    fi
+}
+
+# End of functions for taking a quiz

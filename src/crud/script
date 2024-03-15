@@ -18,6 +18,18 @@ function get_question() {
     echo "$question"
 }
 
+function get_question_count() {
+    local quiz_id="$1"
+
+    read_database
+
+    # extract the question count
+    question_count=$(echo "$json_data" | jq --argjson qid "$quiz_id" '.quizzes[$qid].questions | length')
+
+    # return the question count
+    echo $question_count
+}
+
 function get_answer() {
     local quiz_id="$1"
     local question_id="$2"
