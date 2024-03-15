@@ -1,0 +1,43 @@
+#!/bin/bash
+
+function take_quiz() {
+    display_all_quizzes
+    read -p "$(center_text "Select a quiz: ")" quiz_id
+
+    local quiz_title=$(get_quiz_title "$quiz_id")
+    display_quiz_title "$quiz_title"
+}
+
+function display_quiz_title() {
+    display_banner
+    echo
+    center_text "$(title "$quiz_title")"
+    echo
+}
+
+function display_question() {
+    local quiz_title="$1"
+    local quiz_id="$2"
+    local question_id="$3"
+
+    local question=$(get_question "$quiz_id" "$question_id")
+    local answer=$(get_answer "$quiz_id" "$question_id")
+
+    center_text "Question $((question_id + 1)): $question"
+}
+
+function check_answer() {
+    local quiz_id="$1"
+    local question_id="$2"
+    local user_answer="$3"
+    local correct_answer=$(get_answer "$quiz_id" "$question_id")
+
+    if [ "$user_answer" = "$correct_answer" ]; then
+        center_text "Correct!"
+        echo 1
+    else
+        center_text "Incorrect!"
+        center_text "The correct answer is: $correct_answer"
+        echo 0
+    fi
+}

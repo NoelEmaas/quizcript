@@ -31,6 +31,18 @@ function get_answer() {
     echo "$answer"
 }
 
+function get_quiz_title() {
+    local quiz_id="$1"
+
+    read_database
+
+    # extract the quiz title
+    quiz_title=$(echo "$json_data" | jq --argjson qid "$quiz_id" '.quizzes[$qid].title')
+
+    # return the quiz title
+    echo "$quiz_title"
+}
+
 function get_quiz_titles() {
     read_database
 

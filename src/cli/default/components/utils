@@ -1,0 +1,69 @@
+#!/bin/bash
+
+function center_text() {
+    term_width=$(tput cols)
+    text_length=${#1}
+    padding=$(( ($term_width - $text_length) / 2))
+    printf "%*s%s\n" $padding "" "$1"
+}
+
+function title() {
+    local text="$1"
+    local line_length=60
+    local padding=$(( ($line_length - ${#text}) / 2 ))
+    echo "$(printf "%-${padding}s" "-" | tr ' ' '-') $text $(printf "%-${padding}s" "-" | tr ' ' '-')"
+}
+
+function display_banner() {
+    clear
+    center_text "Welcome to quiz manager -"
+    echo
+    center_text " ██████╗ ██╗   ██╗██╗███████╗ ██████╗██████╗ ██╗██████╗ ████████╗"
+    center_text "██╔═══██╗██║   ██║██║╚══███╔╝██╔════╝██╔══██╗██║██╔══██╗╚══██╔══╝"
+    center_text "██║   ██║██║   ██║██║  ███╔╝ ██║     ██████╔╝██║██████╔╝   ██║   "
+    center_text "██║▄▄ ██║██║   ██║██║ ███╔╝  ██║     ██╔══██╗██║██╔═══╝    ██║   "
+    center_text "╚██████╔╝╚██████╔╝██║███████╗╚██████╗██║  ██║██║██║        ██║   "
+    center_text " ╚══▀▀═╝  ╚═════╝ ╚═╝╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝╚═╝        ╚═╝   "
+    echo
+}
+
+function display_all_quizzes() {
+    local max_length=0
+    local titles=()
+    local counter=1
+
+    # get quiz titles and find maximum length
+    while read -r title; do
+        title_length=${#title}
+        if [ "$title_length" -gt "$max_length" ]; then
+            max_length=$title_length
+        fi
+        titles+=("$title")
+    done < <(get_quiz_titles)
+
+    display_banner
+    center_text "$(title "All Quizzes:")"
+    echo
+
+    # print quiz titles with padding
+    for title in "${titles[@]}"; do
+        padding_length=$((max_length - ${#title}))
+        padded_title="${title}$(printf "%*s" $padding_length)"
+        center_text "$counter. $padded_title"
+        ((counter++))
+    done
+    echo
+}
+
+function display_main_menu() {
+    display_banner
+    echo
+    center_text "$(title "Main Menu:")"     
+    echo
+    center_text "1. Take a quiz  "
+    center_text "2. Create a quiz"
+    center_text "3. Edit a quiz  "
+    center_text "4. Delete a quiz"
+    echo
+}
+

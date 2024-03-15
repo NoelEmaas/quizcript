@@ -1,7 +1,10 @@
 #!/bin/bash
 
+source cli/default/main
+source crud/script
+
 function main() {
-    
+    default_main
 }
 
 main
