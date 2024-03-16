@@ -9,10 +9,9 @@ function default_menu() {
     center_text "$(title "Main Menu:")"     
     echo
     
-    center_text "1. Take a quiz  "
-    center_text "2. Create a quiz"
-    center_text "3. Edit a quiz  "
-    center_text "4. Delete a quiz"
+    center_text "1. Take a quiz   "
+    center_text "2. Create a quiz "
+    center_text "3. Manage quizzes"
     echo
 
     read -p "$(center_text "Enter your choice: ")" choice
@@ -20,8 +19,7 @@ function default_menu() {
     case $choice in
         1) take_quiz ;;
         2) create_quiz ;;
-        3) edit_quiz ;;
-        4) delete_quiz ;;
+        3) manage_quizzes ;;
         *) echo "Invalid choice" ;;
     esac
 }
@@ -50,6 +48,34 @@ function display_banner() {
     center_text "██║▄▄ ██║██║   ██║██║ ███╔╝  ██║     ██╔══██╗██║██╔═══╝    ██║   "
     center_text "╚██████╔╝╚██████╔╝██║███████╗╚██████╗██║  ██║██║██║        ██║   "
     center_text " ╚══▀▀═╝  ╚═════╝ ╚═╝╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝╚═╝        ╚═╝   "
+    echo
+}
+
+function display_all_quizzes() {
+    local max_length=0
+    local titles=()
+    local counter=1
+
+    # get quiz titles and find maximum length
+    while read -r title; do
+        title_length=${#title}
+        if [ "$title_length" -gt "$max_length" ]; then
+            max_length=$title_length
+        fi
+        titles+=("$title")
+    done < <(get_quiz_titles)
+
+    display_banner
+    center_text "$(title "All Quizzes:")"
+    echo
+
+    # print quiz titles with padding
+    for title in "${titles[@]}"; do
+        padding_length=$((max_length - ${#title}))
+        padded_title="${title}$(printf "%*s" $padding_length)"
+        center_text "$counter. $padded_title"
+        ((counter++))
+    done
     echo
 }
 
@@ -100,34 +126,6 @@ function take_quiz() {
 
     read -p "$(center_text "Press enter to continue")"
     take_quiz
-}
-
-function display_all_quizzes() {
-    local max_length=0
-    local titles=()
-    local counter=1
-
-    # get quiz titles and find maximum length
-    while read -r title; do
-        title_length=${#title}
-        if [ "$title_length" -gt "$max_length" ]; then
-            max_length=$title_length
-        fi
-        titles+=("$title")
-    done < <(get_quiz_titles)
-
-    display_banner
-    center_text "$(title "All Quizzes:")"
-    echo
-
-    # print quiz titles with padding
-    for title in "${titles[@]}"; do
-        padding_length=$((max_length - ${#title}))
-        padded_title="${title}$(printf "%*s" $padding_length)"
-        center_text "$counter. $padded_title"
-        ((counter++))
-    done
-    echo
 }
 
 function display_final_score() {
@@ -183,3 +181,171 @@ function check_answer() {
 }
 
 # End of functions for taking a quiz
+
+
+# Functions for creating a quiz
+
+function create_quiz() {
+    display_banner
+    center_text "$(title "Create a Quiz")"
+    echo
+
+    read -p "$(center_text "Enter quiz title: ")" quiz_title
+    echo
+
+    local quiz_id=$(get_number_of_quizzes)
+    add_quiz "$quiz_title"
+
+    add_questions "$quiz_id"
+}
+
+function add_questions() {
+    local quiz_id="$1"
+    local quiz_title=$(get_quiz_title "$quiz_id")
+    
+    while true; do
+        display_banner
+        center_text "$(title "Add a Question to $quiz_title:")"
+        echo
+
+        read -p "$(center_text "Enter question: ")" question
+        
+        if [ "$question" = "" ]; then
+            default_menu
+        fi
+
+        read -p "$(center_text "Enter answer: ")" answer
+
+        add_question "$quiz_id" "$question" "$answer"
+
+        display_banner
+        center_text "$(title "Add a Question to $quiz_title:")"
+
+        echo
+        center_text "Question added successfully!"
+        echo
+        read -p "$(center_text "Add another question(y/n): ")" add_another_question
+
+        if [ "$add_another_question" = "n" ]; then
+            default_menu
+        fi
+    done
+}
+
+# End of functions for creating a quiz
+
+
+# Functions for managing quizzes
+
+function manage_quizzes() {
+    display_banner
+    center_text "$(title "Manage Quizzes")"
+    echo
+
+    display_all_quizzes
+    read -p "$(center_text "Select a quiz to modify/delete or enter 'b' to go back: ")" quiz_id
+
+    ((quiz_id--))
+
+    local quiz_title=$(get_quiz_title "$quiz_id")
+    display_banner
+    center_text "$(title "$quiz_title")"
+    echo
+
+    center_text "1. Edit quiz title "
+    center_text "2. Add question    "
+    center_text "3. Manage questions"
+    center_text "4. Delete quiz     "   
+    center_text "5. Back to menu    "   
+    echo
+
+    read -p "$(center_text "Enter your choice: ")" choice
+
+    case $choice in
+        1) update_quiz_title "$quiz_id" ;;
+        2) add_questions "$quiz_id" ;;
+        3) manage_questions "$quiz_id" ;;
+        4) delete_entire_quiz "$quiz_id" ;;
+        5) default_menu ;;
+        *) echo "Invalid choice" ;;
+    esac
+}
+
+function manage_questions() {
+    local quiz_id="$1"
+    local quiz_title=$(get_quiz_title "$quiz_id")
+    local question_count=$(get_question_count "$quiz_id")
+
+    display_banner
+    center_text "$(title "Manage Questions for $quiz_title")"
+    echo
+
+    get_questions_and_answers "$quiz_id"
+    read -p "$(center_text "Select question to modify/delete: ")" question_id
+
+    display_banner
+    center_text "$(title "Manage Question $question_id")"
+
+    ((question_id--))
+
+    center_text "1. Edit question  "
+    center_text "2. Edit answer    "
+    center_text "3. Delete question"
+    center_text "4. Go back        "
+    echo
+
+    read -p "$(center_text "Enter your choice: ")" choice
+
+    case $choice in
+        1) edit_question "$quiz_id" ;;
+        2) edit_answer "$quiz_id" ;;
+        3) delete_question "$quiz_id" ;;
+        4) manage_quizzes ;;
+        *) echo "Invalid choice" ;;
+    esac
+
+}
+
+function update_quiz_title() {
+    local quiz_id="$1"
+    local quiz_title=$(get_quiz_title "$quiz_id")
+
+    display_banner
+    center_text "$(title "Edit Quiz Title")"
+    echo
+
+    center_text "Current title: $quiz_title"
+    echo
+
+    read -p "$(center_text "Enter new title: ")" new_title
+    edit_quiz_title "$quiz_id" "$new_title"
+
+    display_banner
+    center_text "$(title "Quiz title updated successfully!")"
+    echo
+    read -p "$(center_text "Press enter to continue")"
+    manage_quizzes
+}
+
+function delete_entire_quiz() {
+    local quiz_id="$1"
+    local quiz_title=$(get_quiz_title "$quiz_id")
+
+    display_banner
+    center_text "$(title "Delete Quiz")"
+    echo
+
+    center_text "Are you sure you want to delete $quiz_title? (y/n)"
+    read -p "$(center_text "Enter your choice: ")" choice
+
+    if [ "$choice" = "y" ]; then
+        delete_quiz "$quiz_id"
+        display_banner
+        center_text "$(title "$quiz_title deleted successfully!")"
+        echo
+        read -p "$(center_text "Press enter to continue")"
+        manage_quizzes
+    else
+        manage_quizzes
+    fi
+}

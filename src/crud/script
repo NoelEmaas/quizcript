@@ -18,6 +18,18 @@ function get_question() {
     echo "$question"
 }
 
+function get_questions_and_answers() {
+    local quiz_id="$1"
+
+    read_database
+
+    # extract the questions and answers
+    questions_and_answers=$(echo "$json_data" | jq --argjson qid "$quiz_id" '.quizzes[$qid].questions | map("\(.question) | \(.answer)") | join("\n")')
+
+    # return the questions and answers
+    echo "$questions_and_answers"
+}
+
 function get_question_count() {
     local quiz_id="$1"
 
@@ -53,6 +65,16 @@ function get_quiz_title() {
 
     # return the quiz title
     echo "$quiz_title"
+}
+
+function get_number_of_quizzes() {
+    read_database
+
+    # extract the number of quizzes
+    number_of_quizzes=$(echo "$json_data" | jq '.quizzes | length')
+
+    # return the number of quizzes
+    echo "$number_of_quizzes"
 }
 
 function get_quiz_titles() {
