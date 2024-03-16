@@ -280,7 +280,7 @@ function manage_questions() {
     center_text "$(title "Manage Questions for $quiz_title")"
     echo
 
-    get_questions_and_answers "$quiz_id"
+    display_all_questions "$quiz_id"
     read -p "$(center_text "Select question to modify/delete: ")" question_id
 
     display_banner
@@ -297,13 +297,51 @@ function manage_questions() {
     read -p "$(center_text "Enter your choice: ")" choice
 
     case $choice in
-        1) edit_question "$quiz_id" ;;
-        2) edit_answer "$quiz_id" ;;
-        3) delete_question "$quiz_id" ;;
+        1) update_question "$quiz_id" "$question_id" ;;
+        2) update_answer "$quiz_id" ;;
+        3) remove_question "$quiz_id" ;;
         4) manage_quizzes ;;
         *) echo "Invalid choice" ;;
     esac
+}
 
+function display_all_questions() {
+    local quiz_id="$1"
+    local max_length=0
+    local counter=1
+    local questions=()
+    readarray -t answers < <(get_all_answers "$quiz_id")
+    local question_count=$(get_question_count "$quiz_id")
+
+    # get quiz titles and find maximum length
+    while read -r question; do
+        question_length=${#question}
+        if [ "$question_length" -gt "$max_length" ]; then
+            max_length=$question_length
+        fi
+        questions+=("$question")
+    done < <(get_all_questions "$quiz_id")
+
+    display_banner
+    center_text "$(title "All questions:")"
+    echo
+
+    for ((i=0; i<question_count; i++)); do
+        question="${questions[$i]}"
+        answer="${answers[$i]}"
+        
+        padding_question=$((max_length - ${#question}))
+        padding_answer=$((max_length - ${#answer}))
+
+        padded_question="${question}$(printf "%*s" $padding_question)"
+        padded_answer="${answer}$(printf "%*s" $padding_answer)"
+
+        center_text "$counter. $padded_question"
+        center_text "      Answer: $padded_answer"
+        echo
+        ((counter++))
+    done
+    echo
 }
 
 function update_quiz_title() {
@@ -348,4 +386,44 @@ function delete_entire_quiz() {
     else
         manage_quizzes
     fi
+}
+
+function update_question() {
+    local quiz_id="$1"
+    local question_id="$2"
+
+    display_banner
+    center_text "$(title "Edit Question")"
+    echo
+
+    local question=$(get_question "$quiz_id" "$question_id")
+    center_text "Current question:"
+    center_text "$question"
+    echo
+
+    center_text "Enter new question:"
+    read -p "$(center_text "")" new_question
+    edit_question "$quiz_id" "$question_id" "$new_question"
+
+    display_banner
+    center_text "$(title "Question $((question_id + 1))")"
+    echo
+    center_text "Question updated successfully!"
+    echo
+    read -p "$(center_text "Press enter to continue")"
+    manage_questions "$quiz_id"
+}
+
+function update_answer() {
+    local quiz_id="$1"
+    local question_id="$2"
+    local new_answer="$3"
+
+    edit_answer "$quiz_id" "$question_id" "$new_answer"
+
+    display_banner
+    center_text "$(title "Answer updated successfully!")"
+    echo
+    read -p "$(center_text "Press enter to continue")"
+    manage_questions "$quiz_id"
 }
