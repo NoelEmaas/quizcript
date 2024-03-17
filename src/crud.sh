@@ -12,7 +12,7 @@ function get_question() {
     read_database
 
     # extract the question
-    question=$(echo "$json_data" | ./jq --argjson qid "$quiz_id" --argjson quid "$question_id" '.quizzes[$qid].questions[$quid].question')
+    question=$(echo "$json_data" | ./jq --raw-output --argjson qid "$quiz_id" --argjson quid "$question_id" '.quizzes[$qid].questions[$quid].question')
 
     # return the question
     echo "$question"
@@ -24,7 +24,7 @@ function get_all_questions() {
     read_database
 
     # extract the questions
-    questions=$(echo "$json_data" | ./jq --argjson qid "$quiz_id" '.quizzes[$qid].questions[].question')
+    questions=$(echo "$json_data" | ./jq --raw-output --argjson qid "$quiz_id" '.quizzes[$qid].questions[].question')
 
     # return the questions
     echo "$questions"
@@ -37,7 +37,7 @@ function get_answer() {
     read_database
 
     # extract the answer
-    answer=$(echo "$json_data" | ./jq --argjson qid "$quiz_id" --argjson quid "$question_id" '.quizzes[$qid].questions[$quid].answer')
+    answer=$(echo "$json_data" | ./jq --raw-output --argjson qid "$quiz_id" --argjson quid "$question_id" '.quizzes[$qid].questions[$quid].answer')
 
     # return the answer
     echo "$answer"
@@ -49,7 +49,7 @@ function get_all_answers() {
     read_database
 
     # extract the answers
-    answers=$(echo "$json_data" | ./jq --argjson qid "$quiz_id" '.quizzes[$qid].questions[].answer')
+    answers=$(echo "$json_data" | ./jq --raw-output --argjson qid "$quiz_id" '.quizzes[$qid].questions[].answer')
 
     # return the answers
     echo "$answers"
@@ -73,7 +73,7 @@ function get_quiz_title() {
     read_database
 
     # extract the quiz title
-    quiz_title=$(echo "$json_data" | ./jq --argjson qid "$quiz_id" '.quizzes[$qid].title')
+    quiz_title=$(echo "$json_data" | ./jq --raw-output --argjson qid "$quiz_id" '.quizzes[$qid].title')
 
     # return the quiz title
     echo "$quiz_title"
@@ -93,7 +93,7 @@ function get_quiz_titles() {
     read_database
 
     # extract the quiz titles
-    quiz_titles=$(echo "$json_data" | ./jq '.quizzes[].title')
+    quiz_titles=$(echo "$json_data" | ./jq --raw-output '.quizzes[].title')
 
     # return the quiz titles
     echo "$quiz_titles"
