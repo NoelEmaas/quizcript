@@ -65,9 +65,9 @@ function start_quiz() {
 
         if [ "$user_answer" == "$correct_answer" ]; then
             score=$((score+1))
-            dialog --title "Quiz" --msgbox "Correct!" 6 30
+            dialog --title "$quiz_title" --msgbox "\nCorrect!" 6 30
         else
-            dialog --title "Quiz" --msgbox "Incorrect. \nThe correct answer is: ${correct_answer}" 8 40
+            dialog --title "$quiz_title" --msgbox "\nIncorrect.\n\nThe correct answer is:\n${correct_answer}" 11 40
         fi
     done
 
@@ -81,7 +81,7 @@ function update_title() {
     local exit_status
 
     while true; do
-        new_title=$(dialog --clear --title "Edit Quiz Title" --inputbox "\nCurrent Title: ${quiz_title} \n\nEnter the new title of the quiz\n" 12 40 2>&1 >/dev/tty)
+        new_title=$(dialog --clear --title "Edit Quiz Title" --inputbox "\nCurrent Title:\n${quiz_title} \n\nEnter the new title of the quiz\n" 12 60 2>&1 >/dev/tty)
         exit_status=$?
     
         if [ $exit_status -eq 0 ]; then
@@ -122,7 +122,11 @@ function create_quiz() {
             add_new_questions "$quiz_id"
             break
         else
-            main
+            if [ $(get_number_of_quizzes) -eq 0 ]; then
+                main
+            else
+                quiz_menu
+            fi
             break
         fi
     done
@@ -130,13 +134,14 @@ function create_quiz() {
 
 function add_new_questions() {
     local quiz_id="$1"
+    local quiz_title=$(get_quiz_title "$quiz_id")
     local values
     local exit_status
     local question=""
     local answer=""
 
     while true; do
-        question_data=$(dialog --clear --title "Add Question $quiz_id" \
+        question_data=$(dialog --clear --title "Add Question: $quiz_title" \
             --ok-label "Add" \
             --form "\nEnter a new question and its answer:\n" 12 70 0 \
             "Question:" 1 1 "$question" 1 20 200 0 \
@@ -154,10 +159,13 @@ function add_new_questions() {
                 continue
             fi
 
-            # Add the question to the quiz
             add_question "$quiz_id" "$question" "$answer"
         else
-            manage_quiz "$quiz_id"
+            if [ $(get_question_count "$quiz_id") -eq 0 ]; then
+                manage_quiz "$quiz_id"
+            else
+                question_menu "$quiz_id"
+            fi
         fi
 
         dialog --clear --title "Add Questions" --yesno "\nQuestion Added Successfully!\nWould you like to add another question?\n" 10 40 2>&1 >/dev/tty
@@ -170,7 +178,6 @@ function add_new_questions() {
     done
 }
 
-
 function delete_entire_quiz() {
     local quiz_id="$1"
     local quiz_title=$(get_quiz_title "$quiz_id")
@@ -182,7 +189,12 @@ function delete_entire_quiz() {
     if [ $exit_status -eq 0 ]; then
         delete_quiz "$quiz_id"
         dialog --clear --title "Delete Quiz" --msgbox "\nQuiz Deleted Successfully!\n" 8 40
-        quiz_menu
+
+        if [ $(get_number_of_quizzes) -eq 0 ]; then
+            no_quiz_yet
+        else
+            quiz_menu
+        fi
     else
         manage_quiz "$quiz_id"
     fi
@@ -242,7 +254,12 @@ function delete_qa() {
     if [ $exit_status -eq 0 ]; then
         delete_question "$quiz_id" "$question_id"
         dialog --clear --title "Delete Question" --msgbox "\nQuestion Deleted Successfully!\n" 8 40
-        question_menu "$quiz_id"
+
+        if [ $(get_question_count "$quiz_id") -eq 0 ]; then
+            no_question_yet "$quiz_id"
+        else
+            question_menu "$quiz_id"
+        fi
     else
         manage_question "$quiz_id" "$question_id"
     fi
@@ -284,12 +301,11 @@ function manage_quiz() {
 
     choice=$(dialog --backtitle "Quiz Manager" \
         --title "Quiz: $quiz_title" \
-        --menu "\nChoose an option:\n" 14 60 4 \
+        --menu "\nChoose an option:\n" 12 60 4 \
         1 "Take Quiz" \
         2 "Edit Quiz Title" \
-        3 "View Questions" \
-        4 "Add New Question" \
-        5 "Delete Quiz" \
+        3 "Manage Questions" \
+        4 "Delete Quiz" \
         2>&1 >/dev/tty)
 
     exit_status=$?
@@ -298,9 +314,14 @@ function manage_quiz() {
         case $choice in
             1) take_quiz "$quiz_id" ;;
             2) update_title "$quiz_id" ;;
-            3) question_menu "$quiz_id" ;;
-            4) add_new_questions "$quiz_id" ;;
-            5) delete_entire_quiz "$quiz_id" ;;
+            3) 
+                if [ $(get_question_count "$quiz_id") -eq 0 ]; then
+                    no_question_yet "$quiz_id"
+                else
+                    question_menu "$quiz_id"
+                fi
+                ;;
+            4) delete_entire_quiz "$quiz_id" ;;
             *) break ;;
         esac
     else
@@ -322,12 +343,22 @@ function quiz_menu() {
     done
 
     # display the quiz selection menu
-    quiz_id=$(dialog --clear --title "Quiz Menu" --menu "\nChoose a quiz\n" 20 40 ${#quizzes[@]} "${quiz_option[@]}" 2>&1 >/dev/tty)
+    quiz_id=$(dialog --clear \
+        --ok-label "Select" \
+        --extra-button --extra-label "Create Quiz" \
+        --cancel-label "Back" \
+        --title "Quiz Menu" \
+        --menu "\nChoose a quiz\n" 20 65 \
+        ${#quizzes[@]} "${quiz_option[@]}" \
+        2>&1 >/dev/tty)
+
     exit_status=$?
 
     if [ $exit_status -eq 0 ]; then
         (( quiz_id-- ))
         manage_quiz "$quiz_id"
+    elif [ $exit_status -eq 3 ]; then
+        create_quiz
     else
         main
     fi
@@ -350,8 +381,11 @@ function question_menu() {
 
     # display the quiz selection menu
     question_id=$(dialog --clear \
+        --ok-label "Select" \
+        --extra-button --extra-label "Add Question" \
+        --cancel-label "Back" \
         --title "Question Menu: $quiz_title" \
-        --menu "\nChoose a question\n" 20 40 \
+        --menu "\nChoose a question\n" 20 75 \
         ${#questions[@]} "${question_option[@]}" \
         2>&1 >/dev/tty)
 
@@ -360,6 +394,8 @@ function question_menu() {
     if [ $exit_status -eq 0 ]; then
         (( question_id-- ))
         manage_question "$quiz_id" "$question_id"
+    elif [ $exit_status -eq 3 ]; then
+        add_new_questions "$quiz_id"
     else
         manage_quiz "$quiz_id"
     fi
@@ -380,6 +416,25 @@ function no_quiz_yet() {
         create_quiz
     else
         main
+    fi
+}
+
+function no_question_yet() {
+    local quiz_id="$1"
+    local exit_status
+
+    dialog --clear \
+        --ok-label "Add Question" \
+        --cancel-label "Back" \
+        --title "Question Menu" \
+        --msgbox "\nNo questions yet!\n" 8 40
+
+    exit_status=$?
+
+    if [ $exit_status -eq 0 ]; then
+        add_new_questions "$quiz_id"
+    else
+        manage_quiz "$quiz_id"
     fi
 }
 
