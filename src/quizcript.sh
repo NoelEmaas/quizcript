@@ -6,17 +6,6 @@ function init_db() {
     [ ! -e "database.json" ] && echo '{"quizzes:" []}' > database.json
 }
 
-function quiz_menu() {
-    local quiz_id=$(quiz_selection)
-    manage_quiz "$quiz_id"
-}
-
-function question_menu() {
-    local quiz_id="$1"
-    local question_id=$(question_selection "$quiz_id")
-    manage_question "$quiz_id" "$question_id"
-}
-
 function take_quiz() {
     local quiz_id="$1"
     local quiz_title=$(get_quiz_title "$quiz_id")
@@ -91,7 +80,7 @@ function update_title() {
     local new_title
     local exit_status
 
-    function input_title() {
+    while true; do
         new_title=$(dialog --clear --title "Edit Quiz Title" --inputbox "\nCurrent Title: ${quiz_title} \n\nEnter the new title of the quiz\n" 12 40 2>&1 >/dev/tty)
         exit_status=$?
     
@@ -99,47 +88,77 @@ function update_title() {
             # check if the new title is empty
             if [ -z "$new_title" ]; then
                 dialog --clear --title "Edit Quiz Title" --msgbox "\nTitle cannot be empty!\n" 8 40
-                input_title
+                continue
             fi
 
             # update the quiz title
             edit_quiz_title "$quiz_id" "$new_title"
             dialog --clear --title "Edit Quiz Title" --msgbox "\nQuiz Title Updated Successfully!\n" 8 40
             manage_quiz "$quiz_id"
+            break
         else
             manage_quiz "$quiz_id"
+            break
         fi
-    }
-
-    input_title
+    done
 }
 
 function create_quiz() {
     local quiz_title
     local exit_status
-    
-    quiz_title=$(dialog --clear --title "Create a Quiz" --inputbox "\nEnter the title of the quiz\n" 8 40 2>&1 >/dev/tty)
-    exit_status=$?
 
-    if [ $exit_status -eq 0 ]; then
-        local quiz_id=$(get_number_of_quizzes)
+    while true; do
+        quiz_title=$(dialog --clear --title "Create a Quiz" --inputbox "\nEnter the title of the quiz\n" 8 40 3>&1 1>&2 2>&3)
+        exit_status=$?
 
-        # create the quiz
-        add_quiz "$quiz_title"
+        if [ $exit_status -eq 0 ]; then
+            if [ -z "$quiz_title" ]; then
+                dialog --clear --title "Create a Quiz" --msgbox "\nTitle cannot be empty!\n" 8 40
+                continue
+            fi
 
-        # add questions to the quiz
-        add_new_questions "$quiz_id"
-    else
-        main
-    fi
+            local quiz_id=$(get_number_of_quizzes)
+            add_quiz "$quiz_title"
+            add_new_questions "$quiz_id"
+            break
+        else
+            main
+            break
+        fi
+    done
 }
 
 function add_new_questions() {
     local quiz_id="$1"
+    local values
     local exit_status
+    local question=""
+    local answer=""
 
     while true; do
-        add_new_question "$quiz_id"
+        question_data=$(dialog --clear --title "Add Question $quiz_id" \
+            --ok-label "Add" \
+            --form "\nEnter a new question and its answer:\n" 12 70 0 \
+            "Question:" 1 1 "$question" 1 20 200 0 \
+            "Answer:" 2 1 "$answer" 2 20 200 0 \
+            2>&1 >/dev/tty)
+
+        exit_status=$?
+
+        if [ $exit_status -eq 0 ]; then
+            question=$(echo "$question_data" | sed -n 1p)
+            answer=$(echo "$question_data" | sed -n 2p)
+
+            if [ -z "$question" ] || [ -z "$answer" ]; then
+                dialog --clear --title "Add Questions" --msgbox "\nQuestion or Answer cannot be empty!\n" 8 40
+                continue
+            fi
+
+            # Add the question to the quiz
+            add_question "$quiz_id" "$question" "$answer"
+        else
+            manage_quiz "$quiz_id"
+        fi
 
         dialog --clear --title "Add Questions" --yesno "\nQuestion Added Successfully!\nWould you like to add another question?\n" 10 40 2>&1 >/dev/tty
         exit_status=$?
@@ -151,73 +170,6 @@ function add_new_questions() {
     done
 }
 
-function add_new_question() {
-    local quiz_id="$1"
-    local question=""
-    local answer=""
-    local values
-    local exit_status
-
-    # open fd
-    exec 3>&1
-
-    # Use a subshell to capture the output of the dialog command
-    values=$(dialog --clear --title "Add Question" \
-        --ok-label "Add" \
-        --form "\nEnter a new question and its answer:\n" 12 70 0 \
-        "Question:" 1 1 "$question" 1 20 200 0 \
-        "Answer:" 2 1 "$answer" 2 20 200 0 \
-        2>&1 1>&3)
-
-    exit_status=$?
-
-    # close fd
-    exec 3>&-
-
-    if [ $exit_status -eq 0 ]; then
-        readarray -t lines <<<"$values"
-
-        question="${lines[0]}"
-        answer="${lines[1]}"
-
-        # Add the question to the quiz
-        add_question "$quiz_id" "$question" "$answer"
-    else
-        manage_quiz "$quiz_id"
-    fi
-}
-
-function manage_quiz() {
-    local quiz_id="$1"
-    local quiz_title=$(get_quiz_title "$quiz_id")
-    local choice
-    local exit_status
-
-    choice=$(dialog --backtitle "Quiz Manager" \
-        --title "Quiz: $quiz_title" \
-        --menu "\nChoose an option:\n" 14 60 4 \
-        1 "Take Quiz" \
-        2 "Edit Quiz Title" \
-        3 "View Questions" \
-        4 "Add New Question" \
-        5 "Delete Quiz" \
-        2>&1 >/dev/tty)
-
-    exit_status=$?
-
-    if [ $exit_status -eq 0 ]; then
-        case $choice in
-            1) take_quiz "$quiz_id" ;;
-            2) update_title "$quiz_id" ;;
-            3) question_menu "$quiz_id" ;;
-            4) add_new_questions "$quiz_id" ;;
-            5) delete_entire_quiz "$quiz_id" ;;
-            *) break ;;
-        esac
-    else
-        quiz_menu
-    fi
-}
 
 function delete_entire_quiz() {
     local quiz_id="$1"
@@ -234,7 +186,6 @@ function delete_entire_quiz() {
     else
         manage_quiz "$quiz_id"
     fi
-
 }
 
 function update_qa() {
@@ -244,42 +195,40 @@ function update_qa() {
     local question=$(get_question "$quiz_id" "$question_id")
     local answer=$(get_answer "$quiz_id" "$question_id")
 
-    local new_question
-    local new_answer
     local values
     local exit_status
 
-    # open fd
-    exec 3>&1
+    while true; do
+        new_question_data=$(dialog --clear --title "Edit Question" \
+            --ok-label "Update" \
+            --form "\nEdit the question and its answer:\n" 12 70 0 \
+            "Question:" 1 1 "$question" 1 20 200 0 \
+            "Answer:" 2 1 "$answer" 2 20 200 0 \
+            2>&1 >/dev/tty)
 
-    # Use a subshell to capture the output of the dialog command
-    values=$(dialog --clear --title "Edit Question" \
-        --ok-label "Update" \
-        --form "\nEdit the question and its answer:\n" 12 70 0 \
-        "Question:" 1 1 "$question" 1 20 200 0 \
-        "Answer:" 2 1 "$answer" 2 20 200 0 \
-        2>&1 1>&3)
+        exit_status=$?
 
-    exit_status=$?
+        if [ $exit_status -eq 0 ]; then
+            question=$(echo "$new_question_data" | sed -n 1p)
+            answer=$(echo "$new_question_data" | sed -n 2p)
 
-    # close fd
-    exec 3>&-
+            if [ -z "$question" ] || [ -z "$answer" ]; then
+                dialog --clear --title "Edit Question" --msgbox "\nQuestion or Answer cannot be empty!\n" 8 40
+                continue
+            fi
 
-    if [ $exit_status -eq 0 ]; then
-        readarray -t lines <<<"$values"
+            # update the question and answer
+            edit_question "$quiz_id" "$question_id" "$question" 
+            edit_answer "$quiz_id" "$question_id" "$answer"
 
-        new_question="${lines[0]}"
-        new_answer="${lines[1]}"
-
-        # update the question and answer
-        edit_question "$quiz_id" "$question_id" "$new_question" 
-        edit_answer "$quiz_id" "$question_id" "$new_answer"
-
-        dialog --clear --title "Edit Question" --msgbox "\nQuestion Updated Successfully!\n" 8 40
-        manage_question "$quiz_id" "$question_id"
-    else
-        manage_question "$quiz_id" "$question_id"
-    fi
+            dialog --clear --title "Edit Question" --msgbox "\nQuestion Updated Successfully!\n" 8 40
+            manage_question "$quiz_id" "$question_id"
+            break
+        else
+            manage_question "$quiz_id" "$question_id"
+            break
+        fi
+    done
 }
 
 function delete_qa() {
@@ -327,11 +276,43 @@ function manage_question() {
     fi
 }
 
-function quiz_selection() {
-    local quiz_option=()
-
+function manage_quiz() {
+    local quiz_id="$1"
+    local quiz_title=$(get_quiz_title "$quiz_id")
     local choice
     local exit_status
+
+    choice=$(dialog --backtitle "Quiz Manager" \
+        --title "Quiz: $quiz_title" \
+        --menu "\nChoose an option:\n" 14 60 4 \
+        1 "Take Quiz" \
+        2 "Edit Quiz Title" \
+        3 "View Questions" \
+        4 "Add New Question" \
+        5 "Delete Quiz" \
+        2>&1 >/dev/tty)
+
+    exit_status=$?
+
+    if [ $exit_status -eq 0 ]; then
+        case $choice in
+            1) take_quiz "$quiz_id" ;;
+            2) update_title "$quiz_id" ;;
+            3) question_menu "$quiz_id" ;;
+            4) add_new_questions "$quiz_id" ;;
+            5) delete_entire_quiz "$quiz_id" ;;
+            *) break ;;
+        esac
+    else
+        quiz_menu
+    fi
+}
+
+function quiz_menu() {
+    local quiz_id
+    local exit_status
+
+    local quiz_option=()
 
     readarray -t quizzes < <(get_quiz_titles)
 
@@ -341,24 +322,24 @@ function quiz_selection() {
     done
 
     # display the quiz selection menu
-    choice=$(dialog --clear --title "Quiz Menu" --menu "\nChoose a quiz\n" 20 40 ${#quizzes[@]} "${quiz_option[@]}" 2>&1 >/dev/tty)
+    quiz_id=$(dialog --clear --title "Quiz Menu" --menu "\nChoose a quiz\n" 20 40 ${#quizzes[@]} "${quiz_option[@]}" 2>&1 >/dev/tty)
     exit_status=$?
 
     if [ $exit_status -eq 0 ]; then
-        # return the index of the selected quiz (0-based)
-        echo $((choice - 1))
+        (( quiz_id-- ))
+        manage_quiz "$quiz_id"
     else
         main
     fi
 }
 
-function question_selection() {
-    local quiz_id=$1
+function question_menu() {
+    local quiz_id="$1"
+    local question_id
+    local exit_status
+
     local quiz_title=$(get_quiz_title "$quiz_id")
     local question_option=()
-
-    local choice
-    local exit_status
 
     readarray -t questions < <(get_all_questions "$quiz_id")
 
@@ -368,7 +349,7 @@ function question_selection() {
     done
 
     # display the quiz selection menu
-    choice=$(dialog --clear \
+    question_id=$(dialog --clear \
         --title "Question Menu: $quiz_title" \
         --menu "\nChoose a question\n" 20 40 \
         ${#questions[@]} "${question_option[@]}" \
@@ -377,8 +358,8 @@ function question_selection() {
     exit_status=$?
 
     if [ $exit_status -eq 0 ]; then
-        # return the index of the selected quiz (0-based)
-        echo $((choice - 1))
+        (( question_id-- ))
+        manage_question "$quiz_id" "$question_id"
     else
         manage_quiz "$quiz_id"
     fi
@@ -388,7 +369,7 @@ function no_quiz_yet() {
     local exit_status
 
     dialog --clear \
-        --ok-label "Create" \
+        --ok-label "Create Quiz" \
         --cancel-label "Back" \
         --title "Quiz Menu" \
         --msgbox "\nNo quizzes yet!\n" 8 40
@@ -403,35 +384,19 @@ function no_quiz_yet() {
 }
 
 function main() {    
+    local exit_status
     init_db
 
-    while true; do
-        local choice
-        local exit_status
+    dialog --exit-label "Continue" --title "Welcome To" --textbox banner.txt 17 91
+    exit_status=$?
 
-        choice=$(dialog --clear \
-            --ok-label "Select" \
-            --backtitle "Quiz Manager" \
-            --title "Main Menu" \
-            --menu "\nChoose an option:\n" 12 60 4 \
-            1 "View Quizzes" \
-            2 "Create a Quiz" \
-            3 "Exit" \
-            2>&1 >/dev/tty)
-
-        exit_status=$?
-
-        if [ $exit_status -ne 0 ]; then
-            break
+    if [ $exit_status -eq 0 ]; then
+        if [ $(get_number_of_quizzes) -eq 0 ]; then
+            no_quiz_yet
+        else
+            quiz_menu
         fi
-
-        case $choice in
-            1) quiz_menu ;;
-            2) create_quiz ;;
-            3) kill -s SIGINT "$$" ;;
-            *) kill -s SIGINT "$$" ;;
-        esac
-    done
+    fi
 
     clear
     exit 0
