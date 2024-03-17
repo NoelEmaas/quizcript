@@ -1,16 +1,34 @@
-# Quizcript
+<h1>
+  <samp>Quizcript</samp>
+</h1>
+
 A command-line quiz app written in Bash and Dialog library to create and take quizzes in terminal.
 
-Dependencies
-----------
+<h2>
+  <samp>Dependencies</samp>
+</h2>
+
 This cli app uses dialog library for ui. So you need to install it to your system first.  
 In Ubuntu based distros you can run this command:  
 ```
 $ sudo apt-get install dialog
 ```
 
-Preview
-------
+<h2>
+  <samp>Installation</samp>
+</h2>
+
+```
+$ git clone https://github.com/NoelEmaas/quizcript.git
+$ cd quizcript/src
+$ ./quizcript.sh
+```
+
+
+<h2>
+  <samp>Preview</samp>
+</h2>
+
 |Quizcript|
 |----------|
 |![Screenshot_2024-03-17-23-46-05_1920x1080](https://github.com/NoelEmaas/quizcript/assets/90034393/e43fb339-3533-477b-ad0b-307fa8c6adc7)|
