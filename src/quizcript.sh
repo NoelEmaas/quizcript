@@ -129,6 +129,8 @@ function create_quiz() {
 
         # add questions to the quiz
         add_new_questions "$quiz_id"
+    else
+        main
     fi
 }
 
@@ -366,7 +368,11 @@ function question_selection() {
     done
 
     # display the quiz selection menu
-    choice=$(dialog --clear --title "Question Menu: $quiz_title" --menu "\nChoose a question\n" 20 40 ${#questions[@]} "${question_option[@]}" 2>&1 >/dev/tty)
+    choice=$(dialog --clear \
+        --title "Question Menu: $quiz_title" \
+        --menu "\nChoose a question\n" 20 40 \
+        ${#questions[@]} "${question_option[@]}" \
+        2>&1 >/dev/tty)
 
     exit_status=$?
 
@@ -378,6 +384,24 @@ function question_selection() {
     fi
 }
 
+function no_quiz_yet() {
+    local exit_status
+
+    dialog --clear \
+        --ok-label "Create" \
+        --cancel-label "Back" \
+        --title "Quiz Menu" \
+        --msgbox "\nNo quizzes yet!\n" 8 40
+
+    exit_status=$?
+
+    if [ $exit_status -eq 0 ]; then
+        create_quiz
+    else
+        main
+    fi
+}
+
 function main() {    
     init_db
 
@@ -385,8 +409,9 @@ function main() {
         local choice
         local exit_status
 
-        choice=$(dialog --backtitle "Quiz Manager" \
-            --extra-button \
+        choice=$(dialog --clear \
+            --ok-label "Select" \
+            --backtitle "Quiz Manager" \
             --title "Main Menu" \
             --menu "\nChoose an option:\n" 12 60 4 \
             1 "View Quizzes" \
@@ -402,7 +427,7 @@ function main() {
 
         case $choice in
             1) quiz_menu ;;
-            2) break ;;
+            2) create_quiz ;;
             3) kill -s SIGINT "$$" ;;
             *) kill -s SIGINT "$$" ;;
         esac

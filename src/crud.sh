@@ -196,5 +196,3 @@ function delete_question() {
     # update the JSON file
     echo "$updated_data" > database.json
 }
-
-get_quiz_titles
