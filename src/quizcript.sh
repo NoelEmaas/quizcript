@@ -10,14 +10,23 @@ function take_quiz() {
     local quiz_id="$1"
     local quiz_title=$(get_quiz_title "$quiz_id")
     local exit_status
+    local shuffle=0
     
     readarray -t questions < <(get_all_questions "$quiz_id")
     readarray -t answers < <(get_all_answers "$quiz_id")
 
     local num_questions=${#questions[@]}
 
+    # ask if user wants to randomize the questions
+    dialog --clear --title "$quiz_title" --yesno "\nWould you like to shuffle the questions?\n" 7 45 2>&1 >/dev/tty
+    exit_status=$?
+
+    if [ $exit_status -eq 0 ]; then
+        shuffle=1
+    fi
+
     while true; do
-        start_quiz questions answers "$num_questions" "$quiz_id" "$quiz_title"
+        start_quiz questions answers "$shuffle" "$num_questions" "$quiz_id" "$quiz_title"
 
         dialog --clear --title "$quiz_title" --yesno "\nWould you like to retake the quiz?\n" 7 40 2>&1 >/dev/tty
         exit_status=$?
@@ -34,13 +43,20 @@ function take_quiz() {
 function start_quiz() {
     local -n questions="$1"
     local -n answers="$2"
-    local num_questions="$3"
-    local quiz_id="$4"
-    local quiz_title="$5"
+    local shuffle="$3"
+    local num_questions="$4"
+    local quiz_id="$5"
+    local quiz_title="$6"
     local score=0
 
-    local question_order=( $(seq 0 $((num_questions-1)) | shuf) )
-    
+    local question_order
+
+    if [ $shuffle -eq 1 ]; then
+        question_order=( $(seq 0 $((num_questions-1)) | shuf) )
+    else
+        question_order=( $(seq 0 $((num_questions-1))) )
+    fi
+        
     for i in "${question_order[@]}"; do
         local question=${questions[$i]}
         local correct_answer=${answers[$i]}
