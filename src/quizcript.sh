@@ -38,8 +38,10 @@ function start_quiz() {
     local quiz_id="$4"
     local quiz_title="$5"
     local score=0
+
+    local question_order=( $(seq 0 $((num_questions-1)) | shuf) )
     
-    for ((i=0; i<num_questions; i++)); do
+    for i in "${question_order[@]}"; do
         local question=${questions[$i]}
         local correct_answer=${answers[$i]}
         local user_answer
